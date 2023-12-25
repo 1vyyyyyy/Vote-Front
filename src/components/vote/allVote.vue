@@ -1,21 +1,27 @@
 <!--全部投票-->
 <template>
   <div id="myVote">
-    <div class="title">全部投票</div>
+    <div class="title">参与投票</div>
     <div class="wrapper">
       <ul class="top">
-        <li class="order">投票列表</li>
+        <!-- <li class="order">投票列表</li> -->
+        <el-tabs v-model="activeName" @tab-click="handleClick" tab-position="bottom" type="card" :stretch=true>
+          <el-tab-pane label="全部投票" name="first"></el-tab-pane>
+          <el-tab-pane label="进行中" name="second"></el-tab-pane>
+          <el-tab-pane label="已截止" name="third"></el-tab-pane>
+        </el-tabs>
         <li class="search-li"><div class="icon"><input type="text" placeholder="投票名称" class="search" v-model="key"><i class="el-icon-search"></i></div></li>
         <li><el-button type="primary" @click="search()">搜索投票</el-button></li>
       </ul>
-      <ul class="paper" v-loading="loading">
+      <ul class="paper">
         <li class="item" v-for="(item,index) in pagination.records" :key="index">
-          <h4 @click="go2Vote(item.voteCode)">{{item.source}}</h4>
-          <p class="name">{{item.source}}-{{item.description}}</p>
+          <h4 @click="go2Vote(item.voteId)">{{item.voteName}}</h4>
+          <p class="description">{{item.voteDescription}}</p>
           <div class="info">
-            <i class="el-icon-loading"></i><span>{{item.voteDate.substr(0,10)}}</span>
-            <i class="iconfont icon-icon-time"></i><span v-if="item.totalTime != null">限时{{item.totalTime}}分钟</span>
-            <i class="iconfont icon-"></i><span>候选共{{item.totalPeople}}人</span>
+            <i v-if="item.isEnd" class="iconfont icon-icon-time"><span>{{ ' 进行中' }}</span></i>
+            <i v-if="!item.isEnd" class="el-icon-warning"><span>{{ ' 已截止' }}</span></i>
+            <span v-if="item.isEnd">{{item.endDate.substr(0,10)}} 截止</span>
+            <i class="el-icon-user-solid"></i><span>候选共{{ item.totalPeople }}项</span>
           </div>
         </li>
       </ul>
@@ -41,17 +47,18 @@ export default {
     return {
       loading: false,
       key: null, //搜索关键字
-      allVote: null, //所有考试信息
-      pagination: { //分页后的考试信息
+      allVote: null, //所有投票信息
+      pagination: { //分页后的投票信息
         current: 1, //当前页
         total: null, //记录条数
         size: 6 //每页条数
-      }
+      },
+      activeName: 'first'
     }
   },
   created() {
-    this.getVoteInfo()
     this.loading = true
+    this.getVoteInfo()
   },
   // watch: {
     
@@ -62,20 +69,47 @@ export default {
       this.$axios(`/api/votes/${this.pagination.current}/${this.pagination.size}`).then(res => {
         this.pagination = res.data.data
         this.loading = false
-        console.log(this.pagination)
+        for(var i=0;i < this.pagination.records.length;i++) {
+          this.pagination.records[i].totalPeople = JSON.parse(this.pagination.records[i].candidates).length
+          this.pagination.records[i].isEnd = (new Date(this.pagination.records[i].endDate) > new Date)
+        }
       }).catch(error => {
         console.log(error)
+      })
+    },
+    handleClick(tab, event) {
+        console.log(this.activeName);
+        this.$axios('/api/votes').then(res => {
+        if(res.data.code == 200) {
+          let allVote = res.data.data
+          if(this.activeName == 'second') {
+            let newPage = allVote.filter(item => {
+              item.totalPeople = JSON.parse(item.candidates).length
+              return new Date(item.endDate) > new Date();
+            })
+            this.pagination.records = newPage
+          } else if(this.activeName == 'third') {
+            let newPage = allVote.filter(item => {
+              item.totalPeople = JSON.parse(item.candidates).length
+              return new Date(item.endDate) <= new Date();
+            })
+            this.pagination.records = newPage
+          } else {
+            this.getVoteInfo()
+          }
+
+        }
       })
     },
     //改变当前记录条数
     handleSizeChange(val) {
       this.pagination.size = val
-      this.getExamInfo()
+      this.getVoteInfo()
     },
     //改变当前页码，重新发送请求
     handleCurrentChange(val) {
       this.pagination.current = val
-      this.getExamInfo()
+      this.getVoteInfo()
     },
     //搜索投票
     search() {
@@ -83,15 +117,15 @@ export default {
         if(res.data.code == 200) {
           let allVote = res.data.data
           let newPage = allVote.filter(item => {
-            return item.source.includes(this.key)
+            return item.voteName.includes(this.key)
           })
           this.pagination.records = newPage
         }
       })
     },
     //跳转到投票详情页
-    go2Vote(voteCode) {
-      this.$router.push({path: '/voteForm', query: {voteCode: voteCode}})
+    go2Vote(voteId) {
+      this.$router.push({path: '/voteForm', query: {voteId: voteId}})
       console.log(voteCode)
     }
   }
@@ -148,7 +182,7 @@ export default {
   font-size: 14px;
   color: #88949b;
 }
-.paper .item .name {
+.paper .item .description {
   font-size: 14px;
   color: #88949b;
 }

@@ -6,8 +6,7 @@
         <ul class="list">
           <li class="logo"><i class="iconfont icon-kaoshi"></i><span>Vote-Online</span></li>
           <li><a href="javascript:;" @click="all()">全部投票</a></li>
-          <li><router-link to="/scoreTable">历史结果</router-link></li>
-          <!-- <li><router-link to="/message">给我留言</router-link></li> -->
+          <!-- <li><router-link to="/voteResult">历史结果</router-link></li> -->
           <li class="right" @mouseenter="flag = !flag" @mouseleave="flag = !flag">
             <a href="javascript:;"><i class="iconfont icon-Userselect icon"></i>{{user.userName}}</a>
             <div class="msg" v-if="flag">

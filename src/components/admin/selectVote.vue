@@ -10,8 +10,9 @@
         <template slot-scope="scope">{{ scope.row.enableWeight ? '是' : '否' }}</template></el-table-column>
       <el-table-column fixed="right" label="操作" width="240">
         <template slot-scope="scope">
-          <!-- <el-button @click="detail(scope.row.voteId)" type="success" size="small">详情</el-button> -->
-          <el-button @click="edit(scope.row.voteId)" type="primary" size="small">编辑详情</el-button>
+          <el-button @click="calc(scope.row.voteId)" type="success" size="small">结算</el-button>
+          <!-- <el-button :disabled="scope.row.isEnd" @click="calc(scope.row.voteId)" type="success" size="small">结算</el-button> -->
+          <el-button @click="edit(scope.row.voteId)" type="primary" size="small">编辑</el-button>
           <el-button @click="deleteRecord(scope.row.voteId)" type="danger" size="small">删除</el-button>
         </template>
       </el-table-column>
@@ -68,15 +69,15 @@
             <div class="weight-input-group">
               <div class="weight-input-item">
                 <span>普通用户 </span>
-                <el-input-number v-model="form.weights[0].weight" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
+                <el-input-number v-model="form.weight0" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
               </div>
               <div class="weight-input-item">
                 <span>认证用户 </span>
-                <el-input-number v-model="form.weights[1].weight" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
+                <el-input-number v-model="form.weight1" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
               </div>
               <div class="weight-input-item">
                 <span>媒体用户 </span>
-                <el-input-number v-model="form.weights[2].weight" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
+                <el-input-number v-model="form.weight2" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
               </div>
             </div>
           </el-form-item>
@@ -107,13 +108,29 @@ export default {
     this.getVoteInfo()
   },
   methods: {
+    formatTime(date) { //日期格式化
+      let year = date.getFullYear()
+      let month= date.getMonth()+ 1 < 10 ? "0" + (date.getMonth() + 1) : date.getMonth() + 1;
+      let day = date.getDate() < 10 ? "0" + date.getDate() : date.getDate();
+      // 拼接
+      return year+"-"+month+"-"+day
+    },
+    calc(voteCode) { //结算投票结果并发布
+      this.$axios(`/api/voteCalc/${voteCode}`).then(res => { //根据voteId请求后台
+        if(res.data.code == 200) {
+          this.$message({ //成功结算提示
+            message: '结算成功',
+            type: 'success'
+          })
+        }
+      })
+    },
     edit(voteCode) { //编辑投票
       this.dialogVisible = true
       this.$axios(`/api/vote/${voteCode}`).then(res => { //根据voteId请求后台
         if(res.data.code == 200) {
           this.form = res.data.data
           this.form.candidates = JSON.parse(this.form.candidates)
-          this.form.weights = JSON.parse(this.form.weights)
         }
       })
     },
@@ -125,6 +142,14 @@ export default {
     },
     submit() { //提交修改后的投票信息
       this.dialogVisible = false
+      // console.log(this.form.voteDate)
+      // console.log(this.form.endDate)
+      // let voteDate = this.formatTime(this.form.voteDate)
+      // console.log(voteDate)
+      // this.form.voteDate = voteDate
+      // let endDate = this.formatTime(this.form.endDate)
+      // this.form.endDate = endDate
+      // console.log(endDate)
       this.$axios({
         url: '/api/vote',
         method: 'put',
@@ -160,6 +185,10 @@ export default {
     getVoteInfo() { //分页查询所有投票信息
       this.$axios(`/api/votes/${this.pagination.current}/${this.pagination.size}`).then(res => {
         this.pagination = res.data.data
+        for(var i=0;i < this.pagination.records.length;i++) {
+          this.pagination.records[i].totalPeople = JSON.parse(this.pagination.records[i].candidates).length
+          this.pagination.records[i].isEnd = (new Date(this.pagination.records[i].endDate) > new Date)
+        }
         // this.pagination.records.candidates = JSON.parse(this.pagination.records.candidates)
       }).catch(error => {
       })

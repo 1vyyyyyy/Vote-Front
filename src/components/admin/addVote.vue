@@ -42,15 +42,15 @@
         <div class="weight-input-group">
           <div class="weight-input-item">
             <span>普通用户 </span>
-            <el-input-number v-model="form.weights[0].weight" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
+            <el-input-number v-model="form.weight0" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
           </div>
           <div class="weight-input-item">
             <span>认证用户 </span>
-            <el-input-number v-model="form.weights[1].weight" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
+            <el-input-number v-model="form.weight1" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
           </div>
           <div class="weight-input-item">
             <span>媒体用户 </span>
-            <el-input-number v-model="form.weights[2].weight" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
+            <el-input-number v-model="form.weight2" :min="1" :max="10" :step="1" class="small-input"></el-input-number>
           </div>
         </div>
       </el-form-item>
@@ -73,7 +73,9 @@ export default {
         endDate: null,
         candidates: [{ name: '', description: '' }],
         enableWeight: false,
-        weights: [{ groupType: 0, weight: 1 },{ groupType: 1, weight: 1 },{ groupType: 2, weight: 1 }]
+        weight0: 1,
+        weight1: 1,
+        weight2: 1
       }
     };
   },
@@ -82,17 +84,18 @@ export default {
       let year = date.getFullYear()
       let month= date.getMonth()+ 1 < 10 ? "0" + (date.getMonth() + 1) : date.getMonth() + 1;
       let day=date.getDate() < 10 ? "0" + date.getDate() : date.getDate();
-      let hours=date.getHours() < 10 ? "0" + date.getHours() : date.getHours();
-      let minutes=date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes();
-      let seconds=date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds();
       // 拼接
-      return year+"-"+month+"-"+day+" "+hours+":"+minutes+":"+seconds;
+      return year+"-"+month+"-"+day;
     },
     onSubmit() {
+      console.log(this.form.voteDate)
+      console.log(this.form.endDate)
       let voteDate = this.formatTime(this.form.voteDate)
-      this.form.voteDate = voteDate.substr(0,10)
-      // console.log(typeof(this.form.candidates[0].name))
-      // console.log(typeof(this.form.weights))
+      console.log(voteDate)
+      this.form.voteDate = voteDate
+      let endDate = this.formatTime(this.form.endDate)
+      this.form.endDate = endDate
+      console.log(endDate)
       this.$axios({
         url: '/api/vote',
         method: 'post',
